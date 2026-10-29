@@ -1,0 +1,51 @@
+rules_version = '2';
+
+// Files are private. Every read goes through these rules (the app uses getBlob, never public download URLs).
+// Evidence files are create-only: nothing can overwrite or delete an original once uploaded.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() { return request.auth != null; }
+    function prop(pid) { return firestore.get(/databases/(default)/documents/properties/$(pid)).data; }
+    function insp(pid, iid) { return firestore.get(/databases/(default)/documents/properties/$(pid)/inspections/$(iid)).data; }
+    function isMemberOf(p) { return signedIn() && request.auth.uid in p.memberIds; }
+    function isTeamOf(p) {
+      return isMemberOf(p) && (p.ownerUid == request.auth.uid
+        || p.members[request.auth.uid].role in ['owner', 'co_owner', 'manager', 'agent']);
+    }
+    function canReadInspection(pid, d) {
+      return signedIn() && (request.auth.uid in d.participantIds || (d.teamVisible == true && isTeamOf(prop(pid))));
+    }
+    function canAddEvidence(pid, d) {
+      return (d.status == 'draft' && (request.auth.uid in d.editorIds || (d.createdByTeam == true && isTeamOf(prop(pid)))))
+        || (d.status == 'completed' && canReadInspection(pid, d));
+    }
+    function evidenceUpload() {
+      return request.resource.size > 0 && request.resource.size < 50 * 1024 * 1024
+        && request.resource.contentType.matches('(image|video)/.*')
+        && request.resource.metadata.uploadedBy == request.auth.uid
+        && request.resource.metadata.sha256.matches('^[0-9a-f]{64}$');
+    }
+
+    // properties/{pid}/inspections/{iid}/{eid}/original-<name> and /preview.jpg
+    match /properties/{pid}/inspections/{iid}/{eid}/{fileName} {
+      allow read: if canReadInspection(pid, insp(pid, iid));
+      // `resource == null`: an existing original can never be replaced, however the write is classified.
+      allow create: if signedIn() && resource == null && canAddEvidence(pid, insp(pid, iid)) && evidenceUpload();
+      allow update, delete: if false;
+    }
+
+    // Property photos (not evidence): the team manages them, members can see them.
+    match /properties/{pid}/photos/{fileName} {
+      allow read: if isMemberOf(prop(pid));
+      allow create, update: if isTeamOf(prop(pid))
+        && request.resource.size < 15 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+      allow delete: if isTeamOf(prop(pid));
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
