@@ -1,7 +1,10 @@
 name: Deploy web app to GitHub Pages
 
-# Manual until the Firebase project exists and its web config is stored as repository variables.
+# Publishes on every push to main. Until the Firebase web config is stored as repository variables,
+# the site shows a "not connected to a backend yet" screen instead of the app.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -23,6 +26,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - name: Build
         # Firebase web config values are public identifiers (not secrets); access is enforced by the
         # security rules. They are stored as repository variables (Settings → Secrets and variables → Actions → Variables).
