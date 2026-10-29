@@ -70,3 +70,9 @@ export function formatInstant(date: Date, locale = 'en-ZA', timeZone = 'Africa/J
     timeZoneName: 'short',
   }).format(date);
 }
+
+export function addDays(date: IsoDate, days: number): IsoDate {
+  const { y, m, d } = parseIsoDate(date);
+  const t = new Date(Date.UTC(y, m - 1, d + days));
+  return toIsoDate(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate());
+}

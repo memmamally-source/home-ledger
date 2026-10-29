@@ -137,7 +137,9 @@ service cloud.firestore {
 
       // Ownership, purchase, bond, insurance: the owner's team only.
       match /private/{docId} {
-        allow read, write: if isTeamOf(prop(pid));
+        allow read: if isTeamOf(prop(pid));
+        // getAfter: the details may be written in the same batch that creates the property.
+        allow write: if isTeamOf(getAfter(propPath(pid)).data);
       }
 
       // ---------- tenancies ----------
@@ -292,7 +294,8 @@ service cloud.firestore {
 
       match /audit/{eventId} {
         allow read: if isTeamOf(prop(pid)) || (signedIn() && resource.data.actorUid == uid());
-        allow create: if isMemberOf(prop(pid))
+        // Before the batch (someone leaving writes their last event) or after it (a new property's first event).
+        allow create: if ((exists(propPath(pid)) && isMemberOf(prop(pid))) || isMemberOf(getAfter(propPath(pid)).data))
           && request.resource.data.actorUid == uid()
           && request.resource.data.at == request.time
           && isString(request.resource.data.action, 60)

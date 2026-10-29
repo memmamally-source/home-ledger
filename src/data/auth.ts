@@ -10,12 +10,12 @@ import {
   updateProfile as fbUpdateProfile,
 } from 'firebase/auth';
 import { getAuthInstance } from '@/lib/firebase';
-import { ensureProfile } from './users';
+import { writeSignUpProfile } from './users';
 
 export async function signUpWithEmail(name: string, email: string, password: string) {
   const cred = await createUserWithEmailAndPassword(getAuthInstance(), email.trim(), password);
   await fbUpdateProfile(cred.user, { displayName: name.trim() });
-  await ensureProfile(cred.user.uid, { displayName: name.trim(), email: cred.user.email ?? email });
+  await writeSignUpProfile(cred.user.uid, { displayName: name.trim(), email: cred.user.email ?? email });
   // Verification lets the person accept email-restricted invitations. Failure here is not fatal.
   await sendEmailVerification(cred.user).catch(() => undefined);
   return cred.user;

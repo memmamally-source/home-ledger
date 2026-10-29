@@ -1,6 +1,6 @@
 import { ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Brand } from '@/config/brand';
 import { resetPassword, signInWithApple, signInWithEmail, signInWithGoogle, signUpWithEmail } from '@/data/auth';
 import { appleSignInEnabled, usingEmulators } from '@/lib/firebase';
@@ -77,7 +77,6 @@ function useNext() {
 }
 
 export function SignInPage() {
-  const nav = useNavigate();
   const next = useNext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,8 +87,8 @@ export function SignInPage() {
     setError('');
     setBusy(true);
     try {
+      // The guest-only route guard redirects to `next` as soon as the session sees the user.
       await signInWithEmail(email, password);
-      nav(next, { replace: true });
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -117,7 +116,6 @@ export function SignInPage() {
 }
 
 export function SignUpPage() {
-  const nav = useNavigate();
   const next = useNext();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -138,7 +136,6 @@ export function SignUpPage() {
     setBusy(true);
     try {
       await signUpWithEmail(name, email, password);
-      nav(next, { replace: true });
     } catch (err) {
       setError(friendlyError(err));
     } finally {

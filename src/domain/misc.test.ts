@@ -80,3 +80,25 @@ describe('validateProperty', () => {
     expect(validateProperty({ name: 'Flat', type: 'apartment', address: { line1: '1 Main Rd', city: 'Cape Town' } }).ok).toBe(true);
   });
 });
+
+describe('pdfSafe', async () => {
+  const { pdfSafe } = await import('@/lib/pdf/inspectionReport');
+  it('maps typographic characters to Latin-1', () => {
+    expect(pdfSafe('Tenant’s “tap” – leaks… R 100')).toBe('Tenant\'s "tap" - leaks... R 100');
+    expect(pdfSafe('Émile 🙂')).toBe('Émile ?');
+  });
+});
+
+describe('camera times', async () => {
+  const { exifToIso } = await import('@/lib/media');
+  const { fmtClaimed } = await import('@/lib/format');
+  const { getMarket } = await import('@/config/markets');
+  it('keeps EXIF times as camera-clock time unless an offset was recorded', () => {
+    expect(exifToIso('2025:01:15 09:30:00')).toBe('2025-01-15T09:30:00');
+    expect(exifToIso('2025:01:15 09:30:00', '+02:00')).toBe('2025-01-15T09:30:00+02:00');
+    expect(exifToIso('garbage')).toBeUndefined();
+  });
+  it('shows a zone-less time exactly as recorded, labelled', () => {
+    expect(fmtClaimed('2025-01-15T09:30:00', getMarket('ZA'))).toMatch(/15 Jan 2025, 09:30 \(camera clock, time zone unknown\)/);
+  });
+});

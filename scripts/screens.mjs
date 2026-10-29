@@ -1,0 +1,45 @@
+// Viewport (not full-page) phone screenshots of a few screens, for design review.
+import { spawn } from 'node:child_process';
+import { chromium } from 'playwright';
+const server = spawn('node_modules/.bin/vite', ['--port', '5181', '--strictPort', '--host', '127.0.0.1'], { env: { ...process.env, VITE_USE_EMULATORS: 'true' }, stdio: ['ignore', 'pipe', 'pipe'] });
+await new Promise((r) => server.stdout.on('data', (d) => String(d).includes('Local') && r()));
+const B = 'http://127.0.0.1:5181/';
+const b = await chromium.launch();
+const page = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+const out = process.argv[2];
+try {
+await page.goto(`${B}#/signup`);
+await page.getByLabel('Your name').fill('Sam Naidoo');
+await page.getByLabel('Email').fill('sam@example.com');
+await page.getByLabel('Password').fill('correct-horse-9');
+await page.getByRole('button', { name: 'Create account' }).click();
+await page.getByRole('radio', { name: /I am a tenant/ }).click();
+await page.getByRole('button', { name: 'Continue' }).click();
+await page.getByText('Document the home you rent').waitFor();
+await page.waitForTimeout(400);
+await page.screenshot({ path: `${out}/p1-tenant-home.png` });
+await page.getByRole('link', { name: 'Add my rented home' }).click();
+await page.getByLabel('Name').first().fill('Observatory cottage');
+await page.getByLabel('Street address').fill('4 Lower Main Rd');
+await page.getByLabel('Town or city').fill('Cape Town');
+await page.getByRole('radio', { name: 'House', exact: true }).click();
+await page.getByRole('button', { name: 'Add property' }).click();
+await page.waitForURL(/properties\/\w+$/);
+await page.waitForTimeout(400);
+await page.screenshot({ path: `${out}/p2-property.png` });
+await page.getByRole('link', { name: 'New inspection' }).click();
+await page.waitForTimeout(400);
+await page.screenshot({ path: `${out}/p3-new-inspection.png` });
+await page.getByRole('button', { name: /Start inspection/ }).click();
+await page.waitForURL(/inspections\/\w+$/);
+await page.waitForTimeout(500);
+await page.screenshot({ path: `${out}/p4-inspection.png` });
+await page.getByRole('link', { name: /Kitchen/ }).first().click();
+await page.getByRole('radiogroup', { name: 'Condition of Cupboard doors' }).getByRole('radio', { name: 'Good' }).click();
+await page.getByRole('radiogroup', { name: 'Condition of Sink' }).getByRole('radio', { name: 'Defective' }).click();
+await page.waitForTimeout(500);
+await page.screenshot({ path: `${out}/p5-room.png` });
+} catch (e) { console.log('SHOTERR', e.message); await page.screenshot({ path: `${out}/err.png` }); }
+await b.close();
+server.kill();
+process.exit(0);

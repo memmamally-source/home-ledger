@@ -50,6 +50,18 @@ export async function ensureProfile(uid: string, init: { displayName: string; em
   });
 }
 
+/**
+ * Called right after email sign-up. The session may already have created a profile with a fallback
+ * name, so this merges rather than skipping, making sure the name typed at sign-up is the one saved.
+ */
+export async function writeSignUpProfile(uid: string, init: { displayName: string; email: string }) {
+  await setDoc(
+    doc(getDb(), `users/${uid}`),
+    { displayName: init.displayName.slice(0, 100), email: init.email, intents: [], marketId: 'ZA', theme: 'light', onboarded: false, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
 export async function updateProfile(uid: string, patch: Partial<Omit<UserProfile, 'uid' | 'email'>>) {
   await updateDoc(doc(getDb(), `users/${uid}`), { ...patch, updatedAt: serverTimestamp() });
 }

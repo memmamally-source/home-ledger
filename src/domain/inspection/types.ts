@@ -99,6 +99,8 @@ export interface Inspection {
   createdBy: string;
   createdByName: string;
   createdByRole: PropertyRole;
+  /** Whether the author was on the owner's team; the team may then edit the draft. */
+  createdByTeam: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
   completedAt?: unknown; // server time

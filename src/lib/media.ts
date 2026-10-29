@@ -18,10 +18,12 @@ export async function prepareFile(file: File): Promise<PreparedFile> {
   if (file.type.startsWith('image/')) {
     try {
       const { default: exifr } = await import('exifr');
-      const tags = await exifr.parse(file, { pick: ['DateTimeOriginal', 'CreateDate', 'Make', 'Model', 'ExifImageWidth', 'ExifImageHeight', 'GPSLatitude'] });
+      // reviveValues: false keeps EXIF dates as written. EXIF times have no time zone unless the camera also
+      // wrote an offset, so they are stored as camera-clock time ("2025-01-15T09:30:00") or with that offset.
+      const tags = await exifr.parse(file, { reviveValues: false, pick: ['DateTimeOriginal', 'CreateDate', 'OffsetTimeOriginal', 'Make', 'Model', 'ExifImageWidth', 'ExifImageHeight', 'GPSLatitude'] });
       if (tags) {
-        const taken = tags.DateTimeOriginal ?? tags.CreateDate;
-        if (taken instanceof Date && !Number.isNaN(taken.getTime())) out.exifTakenAt = taken.toISOString();
+        const taken = exifToIso(tags.DateTimeOriginal ?? tags.CreateDate, tags.OffsetTimeOriginal);
+        if (taken) out.exifTakenAt = taken;
         out.metadata = { width: tags.ExifImageWidth, height: tags.ExifImageHeight, make: tags.Make, model: tags.Model, gps: tags.GPSLatitude != null };
       }
     } catch {
@@ -38,6 +40,15 @@ export async function prepareFile(file: File): Promise<PreparedFile> {
     }
   }
   return clean(out);
+}
+
+/** "2025:01:15 09:30:00" (+ optional "+02:00") → "2025-01-15T09:30:00" or "2025-01-15T09:30:00+02:00". */
+export function exifToIso(value: unknown, offset?: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const m = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(value.trim());
+  if (!m) return undefined;
+  const off = typeof offset === 'string' && /^[+-]\d{2}:\d{2}$/.test(offset.trim()) ? offset.trim() : '';
+  return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}${off}`;
 }
 
 function clean<T extends object>(o: T): T {

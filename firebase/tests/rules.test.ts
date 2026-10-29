@@ -190,6 +190,18 @@ describe('properties', () => {
     await assertSucceeds(setDoc(doc(db(LANDLORD), 'properties/new'), propertyData(LANDLORD, 'landlord', { [LANDLORD]: member('owner', 'Lerato') })));
   });
 
+  it('creating a property can write its private details and first audit event in one batch', async () => {
+    const fs = db(LANDLORD);
+    const b = writeBatch(fs);
+    b.set(doc(fs, 'properties/batch'), propertyData(LANDLORD, 'landlord', { [LANDLORD]: member('owner', 'Lerato') }));
+    b.set(doc(fs, 'properties/batch/private/details'), { purchasePrice: 1 });
+    b.set(doc(fs, 'properties/batch/audit/a1'), { action: 'property.created', kind: 'create', actorUid: LANDLORD, actorName: 'L', at: serverTimestamp(), summary: 'Added', target: { type: 'property', id: 'batch' } });
+    await assertSucceeds(b.commit());
+    // but nobody can write private details or audit events for a property they are not on
+    await assertFails(setDoc(doc(db(STRANGER), 'properties/batch/private/details'), { purchasePrice: 2 }));
+    await assertFails(setDoc(doc(db(STRANGER), 'properties/batch/audit/a2'), { action: 'x', kind: 'edit', actorUid: STRANGER, actorName: 'S', at: serverTimestamp(), summary: 'x', target: { type: 'property', id: 'batch' } }));
+  });
+
   it('a tenant creates their own record as tenant, with no landlord involved', async () => {
     await assertSucceeds(setDoc(doc(db(TENANT), 'properties/mine'), propertyData(TENANT, 'tenant', { [TENANT]: member('tenant', 'Thandi') })));
     await assertSucceeds(getDoc(doc(db(TENANT), 'properties/mine')));

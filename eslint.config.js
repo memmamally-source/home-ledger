@@ -11,6 +11,7 @@ export default tseslint.config(
     languageOptions: { ecmaVersion: 2023, globals: { ...globals.browser, ...globals.node } },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-irregular-whitespace': ['error', { skipRegExps: true }],
     },
   },
   { files: ['**/*.{js,mjs}'], extends: [js.configs.recommended], languageOptions: { globals: { ...globals.node, ...globals.browser } } },

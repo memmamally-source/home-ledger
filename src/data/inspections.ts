@@ -55,6 +55,8 @@ export interface NewInspectionInput {
   parties: Inspection['parties'];
   /** Linked tenancy parties to include as participants from the start. */
   shareWith: string[];
+  /** For people outside the owner's team: share with the team from the start. The team's own are always visible to it. */
+  teamVisible?: boolean;
 }
 
 export async function createInspection(p: Property, input: NewInspectionInput, actor: Actor): Promise<string> {
@@ -82,7 +84,7 @@ export async function createInspection(p: Property, input: NewInspectionInput, a
       parties: clean(input.parties),
       participantIds: [...new Set([actor.uid, ...input.shareWith.filter((u) => p.memberIds.includes(u))])],
       editorIds: [actor.uid],
-      teamVisible: team,
+      teamVisible: team || Boolean(input.teamVisible),
       createdBy: actor.uid,
       createdByName: actor.name,
       createdByRole: role,

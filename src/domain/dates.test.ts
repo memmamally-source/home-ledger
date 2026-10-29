@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addMonths, daysBetween, isIsoDate, todayIn } from './dates';
+import { addDays, addMonths, daysBetween, isIsoDate, todayIn } from './dates';
 
 describe('dates', () => {
   it('validates ISO dates including leap years', () => {
@@ -12,6 +12,10 @@ describe('dates', () => {
     expect(addMonths('2024-01-31', 1)).toBe('2024-02-29');
     expect(addMonths('2025-11-15', 3)).toBe('2026-02-15');
     expect(addMonths('2025-03-10', -3)).toBe('2024-12-10');
+  });
+  it('adds days across month and year ends', () => {
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
+    expect(addDays('2025-12-31', 1)).toBe('2026-01-01');
   });
   it('counts days', () => expect(daysBetween('2025-01-01', '2026-01-01')).toBe(365));
   it('gets today in a time zone', () => {
