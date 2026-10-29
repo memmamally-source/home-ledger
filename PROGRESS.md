@@ -17,6 +17,13 @@
 | 4. Advanced (AI extraction, contractors, assets, utilities, bank import, subscriptions) | Not started |
 | 5. Production readiness (Capacitor, store prep, monitoring, perf) | Not started |
 
+## Brand and visual design (29 Oct 2026)
+
+- Palette: ivory backgrounds (`#faf7ef` / surfaces `#fffdf8`), black text (`#111111`), deep green accent (`#1f4d3a`). Dark mode uses green-black with ivory text. Tokens in `src/index.css`.
+- Logo: a roof over an open ledger, ivory on a green tile (`src/app/Logo.tsx`). Wordmark “Home” in black, “Ledger” in green (Fraunces).
+- Assets: `assets/brand/` (logo-mark.svg, logo-horizontal.png, app-icon-1024.png full-bleed for the stores), `public/icons/` (favicon, Apple touch icon, PWA icons), `public/manifest.webmanifest`. The PDF report draws the mark as vectors.
+- The name is still a working name; recheck the logo if the name changes.
+
 ## Phase 1: what exists (29 Oct 2026)
 
 - Auth: email/password, Google (popup), Apple behind `VITE_ENABLE_APPLE_SIGNIN`, password reset, email verification.

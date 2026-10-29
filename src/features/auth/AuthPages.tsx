@@ -5,7 +5,7 @@ import { Brand } from '@/config/brand';
 import { resetPassword, signInWithApple, signInWithEmail, signInWithGoogle, signUpWithEmail } from '@/data/auth';
 import { appleSignInEnabled, usingEmulators } from '@/lib/firebase';
 import { friendlyError } from '@/lib/live';
-import { Logo } from '@/app/Logo';
+import { Logo, Wordmark } from '@/app/Logo';
 import { Button } from '@/ui/Button';
 import { ErrorNote, InfoNote } from '@/ui/EmptyState';
 import { TextField } from '@/ui/Field';
@@ -16,7 +16,15 @@ function AuthLayout({ title, subtitle, children, footer }: { title: string; subt
       <div className="relative hidden overflow-hidden bg-accent p-12 text-on-accent lg:flex lg:flex-col">
         <div className="absolute -right-24 -bottom-24 size-[420px] rounded-full bg-white/5" />
         <div className="absolute top-40 -right-10 size-56 rounded-full bg-white/5" />
-        <div className="relative flex items-center gap-2.5 font-display text-xl font-semibold">{Brand.name}</div>
+        <div className="relative flex items-center gap-3">
+          <svg viewBox="0 0 48 48" className="size-10" aria-hidden="true">
+            <rect width="48" height="48" rx="13" fill="#fbf8f1" />
+            <path d="M10 22.2 24 10.8l14 11.4" fill="none" stroke="#1f4d3a" strokeWidth="2.9" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M24 26.4c-3.6-2.3-8-2.9-11.6-2.5v13.6c3.6-.4 8 .2 11.6 2.5 3.6-2.3 8-2.9 11.6-2.5V23.9c-3.6-.4-8 .2-11.6 2.5z" fill="#1f4d3a" />
+            <path d="M24 26.4v12.6" stroke="#fbf8f1" strokeWidth="1.7" />
+          </svg>
+          <Wordmark className="text-2xl" onDark />
+        </div>
         <div className="relative mt-auto max-w-md">
           <p className="font-display text-4xl leading-tight font-semibold">{Brand.tagline}</p>
           <ul className="mt-8 space-y-3 text-[15px] opacity-90">

@@ -40,10 +40,27 @@ export function pdfSafe(s: string | undefined | null): string {
     .replace(NOT_LATIN1, '?');
 }
 
-const INK: [number, number, number] = [22, 32, 47];
-const MUTED: [number, number, number] = [109, 119, 135];
-const ACCENT: [number, number, number] = [31, 107, 88];
+const INK: [number, number, number] = [17, 17, 17];
+const MUTED: [number, number, number] = [102, 101, 94];
+const ACCENT: [number, number, number] = [31, 77, 58];
+const IVORY: [number, number, number] = [248, 243, 231];
+const TINT: [number, number, number] = [242, 237, 225];
+const RULE: [number, number, number] = [230, 222, 205];
 const COND_COLOR: Record<string, [number, number, number]> = { good: [44, 122, 75], defective: [178, 65, 44], not_tested: [154, 106, 18], na: [109, 119, 135], none: [109, 119, 135] };
+
+/** The logo mark (roof over an open ledger), drawn as vectors so it stays sharp. `size` in mm. */
+function drawMark(doc: jsPDF, x: number, y: number, size: number) {
+  const k = size / 48;
+  doc.setFillColor(...ACCENT).roundedRect(x, y, size, size, 13 * k, 13 * k, 'F');
+  doc.setDrawColor(...IVORY).setLineWidth(2.9 * k).setLineCap('round').setLineJoin('round');
+  doc.lines([[14 * k, -11.4 * k], [14 * k, 11.4 * k]], x + 10 * k, y + 22.2 * k, [1, 1], 'S', false);
+  doc.setFillColor(...IVORY);
+  // left and right pages
+  doc.lines([[-11.6 * k, -2.5 * k], [0, 13.6 * k], [11.6 * k, 2.5 * k]], x + 24 * k, y + 26.4 * k, [1, 1], 'F', true);
+  doc.lines([[11.6 * k, -2.5 * k], [0, 13.6 * k], [-11.6 * k, 2.5 * k]], x + 24 * k, y + 26.4 * k, [1, 1], 'F', true);
+  doc.setDrawColor(...ACCENT).setLineWidth(1.7 * k).line(x + 24 * k, y + 26.4 * k, x + 24 * k, y + 39 * k);
+  doc.setLineWidth(0.2).setLineCap('butt');
+}
 
 export async function buildInspectionReport(input: ReportInput): Promise<Blob> {
   const { inspection: i, evidence, signatures, market } = input;
@@ -76,9 +93,11 @@ export async function buildInspectionReport(input: ReportInput): Promise<Blob> {
 
   // ---- header ----
   doc.setFillColor(...ACCENT).rect(0, 0, W, 4, 'F');
-  doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(...ACCENT).text(t(Brand.name.toUpperCase()), M, (y += 4));
+  y += 4;
+  drawMark(doc, M, y - 4.6, 7);
+  doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...INK).text(t(Brand.name), M + 9.5, y);
   doc.setFont('helvetica', 'normal').setTextColor(...MUTED).text(t(`${INSPECTION_TYPE_LABELS[i.type]} inspection report`), W - M, y, { align: 'right' });
-  y += 9;
+  y += 11;
   doc.setFont('helvetica', 'bold').setFontSize(20).setTextColor(...INK).text(doc.splitTextToSize(t(i.title), W - 2 * M) as string[], M, y);
   y += 8;
   const statusText = i.status === 'completed' ? 'COMPLETED' : i.status === 'void' ? `VOID: ${i.voidReason ?? ''}` : 'DRAFT - NOT COMPLETED, MAY STILL CHANGE';
@@ -110,8 +129,8 @@ export async function buildInspectionReport(input: ReportInput): Promise<Blob> {
     startY: y,
     theme: 'grid',
     head: [['Record details', '']],
-    headStyles: { fillColor: [239, 233, 222], textColor: INK, fontStyle: 'bold' },
-    styles: { fontSize: 8.5, cellPadding: 1.8, textColor: INK, lineColor: [226, 218, 203] },
+    headStyles: { fillColor: TINT, textColor: INK, fontStyle: 'bold' },
+    styles: { fontSize: 8.5, cellPadding: 1.8, textColor: INK, lineColor: RULE },
     columnStyles: { 0: { cellWidth: 52, textColor: MUTED } },
     body: [
       ['Completed (server time)', i.completedAt ? t(fmtInstant(i.completedAt, market)) : 'Not completed'],
@@ -158,8 +177,8 @@ export async function buildInspectionReport(input: ReportInput): Promise<Blob> {
       startY: y,
       theme: 'grid',
       head: [['Item', 'Condition', 'Notes', 'Photos']],
-      headStyles: { fillColor: [239, 233, 222], textColor: INK },
-      styles: { fontSize: 8, cellPadding: 1.5, lineColor: [226, 218, 203], overflow: 'linebreak' },
+      headStyles: { fillColor: TINT, textColor: INK },
+      styles: { fontSize: 8, cellPadding: 1.5, lineColor: RULE, overflow: 'linebreak' },
       columnStyles: { 0: { cellWidth: 52 }, 1: { cellWidth: 24 }, 3: { cellWidth: 30 } },
       body: items.map((item) => [
         t(`${item.label}${item.custom ? ' (added)' : ''}`),
@@ -203,7 +222,7 @@ export async function buildInspectionReport(input: ReportInput): Promise<Blob> {
           const img = await input.loadImage(e).catch(() => null);
           done++;
           input.onProgress?.(done, total);
-          doc.setDrawColor(226, 218, 203).setFillColor(247, 244, 238).rect(x, y, cw, ih, 'FD');
+          doc.setDrawColor(...RULE).setFillColor(...IVORY).rect(x, y, cw, ih, 'FD');
           if (img) {
             const scale = Math.min(cw / img.width, ih / img.height);
             const w = img.width * scale;
@@ -249,7 +268,7 @@ export async function buildInspectionReport(input: ReportInput): Promise<Blob> {
         return null;
       })
       .filter(Boolean);
-    doc.setDrawColor(226, 218, 203).roundedRect(M, y, W - 2 * M, 44, 2, 2, 'S');
+    doc.setDrawColor(...RULE).roundedRect(M, y, W - 2 * M, 44, 2, 2, 'S');
     try {
       doc.addImage(s.signatureImage, 'PNG', M + 3, y + 3, 50, 20);
     } catch {
