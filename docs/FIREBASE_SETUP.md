@@ -55,8 +55,8 @@ Copy `.env.example` to `.env.local`, fill in the web config, set `VITE_USE_EMULA
 
 ## 5. GitHub Pages
 
-1. Create an empty GitHub repository (e.g. `memmamally-source/homeledger`). The Claude integration could not create
-   one itself, so this is needed before the code can be pushed.
+1. The repository is `memmamally-source/home-ledger` (private). GitHub Pages on a private repository needs a paid
+   GitHub plan; otherwise make the repository public or host on Firebase Hosting instead.
 2. Settings → Pages → Source: **GitHub Actions**.
 3. Settings → Secrets and variables → Actions → **Variables**: add `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
    `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_APP_ID`,

@@ -4,7 +4,7 @@
 
 **Product:** landlord and tenant property management (web first, iOS/Android later via Capacitor). Initial market South Africa.
 **Name:** “HomeLedger” is a working name only (not trademark-cleared). `src/config/brand.ts`.
-**Repo:** local only so far. The Claude GitHub integration could not create a repository (403). Owner to create an empty repo (suggested `memmamally-source/homeledger`), then push. Kept separate from Oursome.
+**Repo:** `memmamally-source/home-ledger` (private), branch `main`. Kept separate from Oursome. Private repo: GitHub Pages needs a paid GitHub plan or a public repo; Actions minutes are limited.
 **Backend:** no Firebase project yet; everything is built and tested against the Firebase emulators. See `docs/FIREBASE_SETUP.md`.
 
 ## Status
