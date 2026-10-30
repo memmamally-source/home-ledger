@@ -5,13 +5,14 @@
 **Product:** landlord and tenant property management (web first, iOS/Android later via Capacitor). Initial market South Africa.
 **Name:** “HomeLedger” is a working name only (not trademark-cleared). `src/config/brand.ts`.
 **Repo:** `memmamally-source/home-ledger` (private), branch `main`. Kept separate from Oursome. Private repo: GitHub Pages needs a paid GitHub plan or a public repo; Actions minutes are limited.
-**Backend:** no Firebase project yet; everything is built and tested against the Firebase emulators. See `docs/FIREBASE_SETUP.md`.
+**Backend:** Firebase project `homeledger-test` (Blaze plan, budget alert set). Firestore and Storage in `africa-south1` (Johannesburg). Email/password + Google sign-in on. Rules and indexes deployed 29 Oct 2026 by the owner (`npx firebase-tools@15 deploy --only firestore:rules,firestore:indexes,storage --project homeledger-test`). Bucket CORS set for `https://memmamally-source.github.io`.
+**Live site:** https://memmamally-source.github.io/home-ledger/ (GitHub Pages, publishes on every push to `main`; Firebase web config in `.env.production`).
 
 ## Status
 
 | Phase | Status |
 | --- | --- |
-| 1. Core app and inspections | ✅ Built and tested on emulators (details below). Not yet on a real Firebase project or a physical phone |
+| 1. Core app and inspections | ✅ Built and tested on emulators; live on the real project since 29 Oct 2026. Owner confirmed sign-up and profile saving work live. Inspections/photos on the live site and on a physical phone not yet confirmed |
 | 2. Tenant collaboration (maintenance, documents, messages, comparisons, deposits, calendar) | Not started |
 | 3. Financial management (ledger UI, statements) | Domain model and logic done and tested; no UI or Firestore rules yet |
 | 4. Advanced (AI extraction, contractors, assets, utilities, bank import, subscriptions) | Not started |
