@@ -1,0 +1,84 @@
+# Builds the iPhone app on GitHub's Macs (no Mac needed).
+# - On pushes and pull requests that change the app: checks it builds (unsigned).
+# - Run by hand (Actions → iPhone app → Run workflow): builds a signed copy and uploads it to App Store Connect,
+#   where it appears in TestFlight after about 15 minutes.
+# Uses the same four repository secrets as the owner's other apps: APPSTORE_KEY_ID, APPSTORE_ISSUER_ID,
+# APPSTORE_KEY (text of the .p8 file) and APPLE_TEAM_ID. See docs/STORE_RELEASE.md.
+name: iPhone app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['src/**', 'ios/**', 'public/**', 'capacitor.config.ts', 'package-lock.json', 'index.html', '.github/workflows/ios.yml']
+  pull_request:
+    paths: ['src/**', 'ios/**', 'public/**', 'capacitor.config.ts', 'package-lock.json', 'index.html', '.github/workflows/ios.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      APP_VERSION: '1.0.0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the web app and copy it into the iOS project
+        run: npm run build && npx cap sync ios
+
+      - name: Check it builds (unsigned)
+        if: github.event_name != 'workflow_dispatch'
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/build" \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 40
+          test "${PIPESTATUS[0]}" = 0
+
+      - name: Build, sign and upload to App Store Connect
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: ios/App
+        env:
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          KEY: ${{ secrets.APPSTORE_KEY }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          KEY_ID=$(printf '%s' "$KEY_ID" | tr -d '[:space:]')
+          ISSUER_ID=$(printf '%s' "$ISSUER_ID" | tr -d '[:space:]')
+          TEAM_ID=$(printf '%s' "$TEAM_ID" | tr -d '[:space:]')
+          if [ -z "$KEY_ID" ] || [ -z "$ISSUER_ID" ] || [ -z "$KEY" ] || [ -z "$TEAM_ID" ]; then
+            echo "::error::Add the four App Store Connect secrets first (see docs/STORE_RELEASE.md)."
+            exit 1
+          fi
+          KEY_PATH="$RUNNER_TEMP/AuthKey_$KEY_ID.p8"
+          printf '%s\n' "$KEY" > "$KEY_PATH"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID")
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$APP_VERSION" CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            "${AUTH[@]}" archive | tail -n 40
+          test "${PIPESTATUS[0]}" = 0
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" "${AUTH[@]}"
+          rm -f "$KEY_PATH"
+          echo "Uploaded version $APP_VERSION build ${{ github.run_number }}. It appears in App Store Connect → TestFlight in about 15 minutes."

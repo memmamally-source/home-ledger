@@ -1,5 +1,8 @@
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   OAuthProvider,
   createUserWithEmailAndPassword,
   sendEmailVerification,
@@ -47,4 +50,20 @@ export function resendVerification() {
 
 export function signOut() {
   return fbSignOut(getAuthInstance());
+}
+
+/** Confirms it's really the account holder before a destructive action (password, or Google pop-up on the web). */
+export async function reauthenticate(password: string) {
+  const u = getAuthInstance().currentUser;
+  if (!u) throw new Error('Not signed in');
+  if (u.providerData.some((p) => p.providerId === 'password')) {
+    if (!u.email) throw new Error('No email on account');
+    await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, password));
+  } else {
+    await reauthenticateWithPopup(u, new GoogleAuthProvider());
+  }
+}
+
+export function usesPassword() {
+  return Boolean(getAuthInstance().currentUser?.providerData.some((p) => p.providerId === 'password'));
 }

@@ -63,3 +63,11 @@ export function getStorageInstance(): FirebaseStorage {
   init();
   return storage!;
 }
+
+/** Callable server functions (account deletion). They run in Johannesburg, next to the data. */
+export async function callFunction<T = unknown>(name: string, data: unknown = {}): Promise<T> {
+  const { getFunctions, httpsCallable } = await import('firebase/functions');
+  init();
+  const fn = httpsCallable(getFunctions(app!, 'africa-south1'), name);
+  return (await fn(data)).data as T;
+}

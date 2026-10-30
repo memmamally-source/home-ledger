@@ -166,7 +166,13 @@ export function SignUpPage() {
         </Button>
         <p className="flex gap-2 text-xs leading-relaxed text-ink-3">
           <ShieldCheck className="size-4 shrink-0 text-accent" />
-          Your records are private to you unless you choose to share them. We never share your previous tenancies with new landlords.
+          <span>
+            Your records are private to you unless you choose to share them. We never share your previous tenancies with new landlords. Read the{' '}
+            <a className="font-semibold text-accent" href={Brand.privacyUrl} target="_blank" rel="noreferrer">
+              privacy policy
+            </a>
+            .
+          </span>
         </p>
       </form>
     </AuthLayout>

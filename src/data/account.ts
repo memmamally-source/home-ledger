@@ -1,6 +1,6 @@
 import { collection, collectionGroup, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { TEAM_ROLES } from '@/domain/roles';
-import { getDb } from '@/lib/firebase';
+import { callFunction, getDb } from '@/lib/firebase';
 import { toDate } from '@/lib/live';
 import { mapProperty } from './properties';
 
@@ -47,4 +47,26 @@ export async function requestDeletion(uid: string, reason: string) {
 export async function getDeletionRequest(uid: string) {
   const s = await getDoc(doc(getDb(), `deletionRequests/${uid}`));
   return s.exists() ? s.data() : null;
+}
+
+export type DeleteOutcome = 'deleted' | 'service-unavailable';
+
+/**
+ * Deletes the account and data on the server (see functions/src/deleteAccount.ts for the policy). The caller must
+ * have signed in within the last 15 minutes. If the server function isn't deployed yet, the request is recorded
+ * instead and the person is told so.
+ */
+export async function deleteMyAccount(uid: string, reason: string): Promise<DeleteOutcome> {
+  try {
+    await callFunction('deleteAccount');
+    return 'deleted';
+  } catch (e) {
+    const code = typeof e === 'object' && e && 'code' in e ? String((e as { code: unknown }).code) : '';
+    if (code === 'functions/failed-precondition') throw Object.assign(new Error('requires-recent-login'), { code: 'auth/requires-recent-login' });
+    if (['functions/not-found', 'functions/unavailable', 'functions/internal'].includes(code)) {
+      await requestDeletion(uid, reason);
+      return 'service-unavailable';
+    }
+    throw e;
+  }
 }

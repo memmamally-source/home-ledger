@@ -2,8 +2,8 @@ import { Download, LogOut, ShieldAlert, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Brand } from '@/config/brand';
 import { MARKETS } from '@/config/markets';
-import { exportMyData, getDeletionRequest, requestDeletion } from '@/data/account';
-import { resendVerification, signOut } from '@/data/auth';
+import { deleteMyAccount, exportMyData, getDeletionRequest } from '@/data/account';
+import { reauthenticate, resendVerification, signOut, usesPassword } from '@/data/auth';
 import { updateProfile, type Intent, type ThemePreference } from '@/data/users';
 import { usingEmulators } from '@/lib/firebase';
 import { saveFile } from '@/lib/files';
@@ -13,7 +13,7 @@ import { applyTheme } from '@/app/theme';
 import { Button } from '@/ui/Button';
 import { Card, CardHeader } from '@/ui/Card';
 import { Dialog } from '@/ui/Dialog';
-import { InfoNote } from '@/ui/EmptyState';
+import { ErrorNote, InfoNote } from '@/ui/EmptyState';
 import { SelectField, Switch, TextArea, TextField } from '@/ui/Field';
 import { PageHeader } from '@/ui/PageHeader';
 import { Segmented } from '@/ui/Tabs';
@@ -113,13 +113,19 @@ export function SettingsPage() {
             Export my data
           </Button>
           <div className="border-t border-line pt-4">
-            {deletion ? (
-              <InfoNote tone="warn">You asked for your account to be deleted. It hasn’t been processed yet: deletion runs on the server, which isn’t switched on in this test version. You can keep using the app meanwhile.</InfoNote>
-            ) : (
-              <Button variant="danger" icon={<ShieldAlert className="size-4" />} onClick={() => setDeleting(true)}>
-                Request account deletion
-              </Button>
-            )}
+            {deletion && <div className="mb-3"><InfoNote tone="warn">An earlier deletion request is on record. You can delete your account now instead.</InfoNote></div>}
+            <Button variant="danger" icon={<ShieldAlert className="size-4" />} onClick={() => setDeleting(true)}>
+              Delete my account
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="space-y-1 p-5">
+          <CardHeader title="Help and legal" />
+          <div className="flex flex-col items-start gap-1 pt-2 text-sm font-semibold">
+            <a className="text-accent" href={Brand.privacyUrl} target="_blank" rel="noreferrer">Privacy policy</a>
+            <a className="text-accent" href={Brand.supportUrl} target="_blank" rel="noreferrer">Help and support</a>
+            <a className="text-accent" href={`mailto:${Brand.supportEmail}`}>Email {Brand.supportEmail}</a>
           </div>
         </Card>
 
@@ -138,43 +144,57 @@ export function SettingsPage() {
 function DeletionDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const { user } = useAuthed();
   const toast = useToast();
+  const [password, setPassword] = useState('');
+  const [confirmText, setConfirmText] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const needsPassword = usesPassword();
+  const ready = confirmText.trim().toUpperCase() === 'DELETE' && (!needsPassword || password.length > 0);
+
+  const run = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await reauthenticate(password);
+      const outcome = await deleteMyAccount(user.uid, reason);
+      if (outcome === 'deleted') {
+        toast('Your account has been deleted');
+        await signOut().catch(() => undefined);
+      } else {
+        toast('Deletion request recorded');
+        onDone();
+        onClose();
+      }
+    } catch (e) {
+      setError(friendlyError(e));
+      setBusy(false);
+    }
+  };
+
   return (
     <Dialog
       open
       onClose={onClose}
-      title="Request account deletion"
+      title="Delete your account"
       footer={
-        <Button
-          variant="danger"
-          loading={busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              await requestDeletion(user.uid, reason);
-              toast('Deletion request recorded');
-              onDone();
-              onClose();
-            } catch (e) {
-              toast(friendlyError(e), 'bad');
-              setBusy(false);
-            }
-          }}
-        >
-          Record request
+        <Button variant="danger" loading={busy} disabled={!ready} onClick={run}>
+          Delete my account
         </Button>
       }
     >
       <div className="space-y-4 pb-2 text-sm leading-relaxed text-ink-2">
-        <p>Export your data first if you want a copy. When deletion is processed:</p>
+        <p>This can’t be undone. Export your data first if you want a copy.</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Your profile, sign-in and the property records you own are removed.</li>
-          <li>Inspections you shared with others stay available to them (it is their record too), with your name kept on what you submitted.</li>
-          <li>Records may be kept longer where the law requires it.</li>
+          <li>Your profile, sign-in, invitations and the records only you can see are deleted, including photos.</li>
+          <li>Properties you own alone are deleted. A property you co-own passes to your co-owner.</li>
+          <li>Inspections other people took part in stay with them, because they are their records too. Your name stays on what you submitted there.</li>
         </ul>
-        <InfoNote tone="warn">In this test version the request is recorded but not processed automatically: deletion needs a server function that isn’t deployed yet.</InfoNote>
+        {needsPassword && <TextField label="Your password" type="password" autoComplete="current-password" value={password} onChange={setPassword} />}
+        {!needsPassword && <p className="text-xs text-ink-3">You’ll be asked to confirm with Google.</p>}
+        <TextField label={'Type DELETE to confirm'} value={confirmText} onChange={setConfirmText} autoComplete="off" />
         <TextArea label="Reason" optional value={reason} onChange={setReason} rows={2} />
+        {error && <ErrorNote>{error}</ErrorNote>}
       </div>
     </Dialog>
   );
