@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { captureGap, safeFileName, timeStatements, validateEvidenceFile } from './evidence';
 import { canonicalJson, sha256Hex } from './hash';
 import { newEvidenceRef, newId } from './ids';
-import { inviteLink, inviteProblem } from './invitation';
+import { inviteLink, inviteProblem, parseInviteToken } from './invitation';
 import { validateProperty } from './property';
 import { capabilitiesFor } from './roles';
 
@@ -67,6 +67,12 @@ describe('invitations', () => {
     expect(inviteProblem({ ...inv, status: 'revoked' }, user, { now })).toBe('revoked');
     expect(inviteProblem(inv, { ...user, uid: 'landlord' }, { now })).toBe('own_invite');
     expect(inviteProblem({ ...inv, email: undefined }, user, { now, alreadyMember: true })).toBe('already_member');
+  });
+  it('reads tokens from pasted links or bare tokens', () => {
+    const tok = 'a1'.repeat(16);
+    expect(parseInviteToken(`Lerato invited you.\nhttps://x.github.io/home-ledger/#/invite/${tok}`)).toBe(tok);
+    expect(parseInviteToken(`  ${tok.toUpperCase()} `)).toBe(tok);
+    expect(parseInviteToken('https://example.com')).toBeNull();
   });
   it('builds hash-router links', () => {
     expect(inviteLink('https://x.github.io/homeledger/', 'abc')).toBe('https://x.github.io/homeledger/#/invite/abc');

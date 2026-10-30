@@ -3,7 +3,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Brand } from '@/config/brand';
 import { resetPassword, signInWithApple, signInWithEmail, signInWithGoogle, signUpWithEmail } from '@/data/auth';
-import { appleSignInEnabled, usingEmulators } from '@/lib/firebase';
+import { appleSignInEnabled, googleSignInEnabled, usingEmulators } from '@/lib/firebase';
 import { friendlyError } from '@/lib/live';
 import { Logo, Wordmark } from '@/app/Logo';
 import { Button } from '@/ui/Button';
@@ -61,11 +61,14 @@ function SocialButtons({ onError, busy, setBusy }: { onError: (m: string) => voi
       setBusy(false);
     }
   };
+  if (!googleSignInEnabled && !appleSignInEnabled) return null;
   return (
     <div className="space-y-2.5">
-      <Button variant="secondary" className="w-full" disabled={busy} onClick={() => run(signInWithGoogle)} icon={<GoogleIcon />}>
-        Continue with Google
-      </Button>
+      {googleSignInEnabled && (
+        <Button variant="secondary" className="w-full" disabled={busy} onClick={() => run(signInWithGoogle)} icon={<GoogleIcon />}>
+          Continue with Google
+        </Button>
+      )}
       {appleSignInEnabled && (
         <Button variant="secondary" className="w-full" disabled={busy} onClick={() => run(signInWithApple)}>
           Continue with Apple

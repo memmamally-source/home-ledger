@@ -42,7 +42,7 @@ export function RoomPage() {
 
   return (
     <div className="animate-rise mx-auto max-w-3xl">
-      <div className="sticky top-0 z-30 -mx-4 mb-5 border-b border-line bg-bg/95 px-4 pt-2 pb-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+      <div className="sticky top-[env(safe-area-inset-top)] z-30 -mx-4 mb-5 border-b border-line bg-bg/95 px-4 pt-2 pb-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
         <Link to={`/properties/${pid}/inspections/${iid}`} className="inline-flex items-center gap-1 py-1 text-sm font-semibold text-ink-3 hover:text-ink">
           <ChevronLeft className="size-4" /> {i.title}
         </Link>

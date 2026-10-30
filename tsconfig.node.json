@@ -11,5 +11,5 @@
     "verbatimModuleSyntax": true,
     "noEmit": true
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "firebase/tests"]
+  "include": ["vite.config.ts", "vitest.config.ts", "capacitor.config.ts", "firebase/tests"]
 }

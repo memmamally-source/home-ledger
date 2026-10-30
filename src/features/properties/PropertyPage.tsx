@@ -18,6 +18,8 @@ import { useTenancies } from '@/data/tenancies';
 import { fmtDate, fmtInstant, fmtMoney, initials } from '@/lib/format';
 import { friendlyError, toDate } from '@/lib/live';
 import { useAuthed } from '@/app/session';
+import { shareLink } from '@/lib/files';
+import { publicAppUrl } from '@/lib/platform';
 import { Badge, type Tone } from '@/ui/Badge';
 import { Button, ButtonLink } from '@/ui/Button';
 import { Card, CardHeader } from '@/ui/Card';
@@ -349,7 +351,7 @@ function People({ p, tenancies }: { p: Property; tenancies: Tenancy[] }) {
                   <div className="font-semibold text-ink">{ROLE_LABELS[inv.role]}</div>
                   <div className="text-sm text-ink-3">{inv.email ? `Only ${inv.email} can accept` : 'Anyone with the link can accept'} · expires {toDate(inv.expiresAt)?.toLocaleDateString()}</div>
                 </div>
-                <Button variant="secondary" size="sm" icon={<Copy className="size-4" />} onClick={() => navigator.clipboard.writeText(inviteLink(location.href, inv.id)).then(() => toast('Link copied'))}>
+                <Button variant="secondary" size="sm" icon={<Copy className="size-4" />} onClick={() => navigator.clipboard.writeText(inviteLink(publicAppUrl(), inv.id)).then(() => toast('Link copied'))}>
                   Copy link
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => run(() => revokeInvitation(inv, actor), 'Invitation cancelled')}>
@@ -436,7 +438,7 @@ function InviteDialog({ open, onClose, p, tenancies }: { open: boolean; onClose:
     setError('');
     try {
       const token = await createInvitation(p, { role, email: email || undefined, tenancyId: tenantRole ? tenancyId || undefined : undefined, message }, actor);
-      setLink(inviteLink(location.href, token));
+      setLink(inviteLink(publicAppUrl(), token));
     } catch (e) {
       setError(friendlyError(e));
     } finally {
@@ -446,8 +448,8 @@ function InviteDialog({ open, onClose, p, tenancies }: { open: boolean; onClose:
 
   const share = async () => {
     const text = `${actor.name} invited you to ${p.name} on HomeLedger.${message ? `\n\n${message}` : ''}`;
-    if (navigator.share) await navigator.share({ title: 'Invitation', text, url: link }).catch(() => undefined);
-    else await navigator.clipboard.writeText(`${text}\n${link}`).then(() => toast('Invitation copied'));
+    const how = await shareLink(text, link, 'Invitation').catch(() => null);
+    if (how === 'copied') toast('Invitation copied');
   };
 
   return (

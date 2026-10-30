@@ -119,6 +119,8 @@ body {
 
 body {
   min-height: 100dvh;
+  /* Keeps content clear of the notch / status bar in the native app (0 in ordinary browsers). */
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Inputs at 16px so iOS never zooms on focus. */

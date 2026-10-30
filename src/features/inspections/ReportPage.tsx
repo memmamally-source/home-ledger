@@ -9,6 +9,8 @@ import { addAudit } from '@/data/common';
 import { getDb } from '@/lib/firebase';
 import { fmtDate, fmtInstant } from '@/lib/format';
 import { storageBlob } from '@/lib/uploads';
+import { saveFile, shareFile } from '@/lib/files';
+import { isNative } from '@/lib/platform';
 import { useAuthed } from '@/app/session';
 import { Badge } from '@/ui/Badge';
 import { Button, ButtonLink } from '@/ui/Button';
@@ -60,15 +62,9 @@ export function ReportPage() {
   const download = async () => {
     setBusy('Preparing PDF…');
     try {
-      const blob = await build();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    } catch {
-      toast('The PDF could not be created. Check your connection and try again.', 'bad');
+      await saveFile(await build(), fileName, i.title);
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError' && !/cancel/i.test((e as Error).message ?? '')) toast('The PDF could not be created. Check your connection and try again.', 'bad');
     } finally {
       setBusy(null);
     }
@@ -77,11 +73,9 @@ export function ReportPage() {
   const share = async () => {
     setBusy('Preparing PDF…');
     try {
-      const file = new File([await build()], fileName, { type: 'application/pdf' });
-      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: i.title });
-      else toast('Sharing files isn’t supported in this browser. Use Download instead.', 'bad');
+      if (!(await shareFile(await build(), fileName, i.title))) toast('Sharing files isn’t supported in this browser. Use Download instead.', 'bad');
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') toast('The PDF could not be shared.', 'bad');
+      if ((e as Error).name !== 'AbortError' && !/cancel/i.test((e as Error).message ?? '')) toast('The PDF could not be shared.', 'bad');
     } finally {
       setBusy(null);
     }
@@ -97,10 +91,10 @@ export function ReportPage() {
         subtitle={`${i.propertyName} · ${fmtDate(i.inspectionDate, market)}`}
         actions={
           <>
-            <Button icon={<Download className="size-4" />} loading={busy !== null} onClick={download}>
-              {busy ?? 'Download PDF'}
+            <Button icon={isNative ? <Share2 className="size-4" /> : <Download className="size-4" />} loading={busy !== null} onClick={download}>
+              {busy ?? (isNative ? 'Save or share PDF' : 'Download PDF')}
             </Button>
-            {typeof navigator.share === 'function' && (
+            {!isNative && typeof navigator.share === 'function' && (
               <Button variant="secondary" icon={<Share2 className="size-4" />} disabled={busy !== null} onClick={share}>
                 Share
               </Button>

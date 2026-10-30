@@ -4,6 +4,16 @@ import './index.css';
 import { firebaseConfigured } from '@/lib/firebase';
 import { applyTheme } from '@/app/theme';
 import { SetupNeeded } from '@/app/SetupNeeded';
+import { isNative } from '@/lib/platform';
+
+// Android back button: go back inside the app, and leave the app only from the home screen.
+if (isNative)
+  void import('@capacitor/app').then(({ App }) =>
+    App.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack && location.hash && location.hash !== '#/') history.back();
+      else void App.exitApp();
+    }),
+  );
 
 let saved: 'light' | 'dark' | 'system' = 'light';
 try {

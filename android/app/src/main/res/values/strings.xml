@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HomeLedger</string>
+    <string name="title_activity_main">HomeLedger</string>
+    <string name="package_name">com.memmamally.homeledger</string>
+    <string name="custom_url_scheme">com.memmamally.homeledger</string>
+</resources>

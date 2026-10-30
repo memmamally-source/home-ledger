@@ -11,6 +11,7 @@ import { useTeamTenancies } from '@/data/portfolio';
 import { useMyProperties } from '@/data/properties';
 import { fmtDate, fmtDays, fmtMoney } from '@/lib/format';
 import { useAuthed } from '@/app/session';
+import { JoinWithLinkButton } from '@/features/invitations/JoinWithLink';
 import { Badge } from '@/ui/Badge';
 import { ButtonLink } from '@/ui/Button';
 import { Card, CardHeader, Stat } from '@/ui/Card';
@@ -213,8 +214,19 @@ function TenantSection({ homes }: { homes: Property[] }) {
     <Section title="Your rented home" action={<ButtonLink to="/properties/new?kind=tenant" variant="ghost" size="sm" icon={<Plus className="size-4" />}>Add a home</ButtonLink>}>
       {homes.length === 0 ? (
         <Card>
-          <EmptyState icon={<KeyRound className="size-6" />} title="Document the home you rent" action={<ButtonLink to="/properties/new?kind=tenant" icon={<Plus className="size-4" />}>Add my rented home</ButtonLink>}>
-            Record your lease, do a move-in inspection with photos, and keep the evidence. Your landlord doesn’t need to use the app. If they invited you, open their link instead.
+          <EmptyState
+            icon={<KeyRound className="size-6" />}
+            title="Document the home you rent"
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <ButtonLink to="/properties/new?kind=tenant" icon={<Plus className="size-4" />}>
+                  Add my rented home
+                </ButtonLink>
+                <JoinWithLinkButton variant="secondary" />
+              </div>
+            }
+          >
+            Record your lease, do a move-in inspection with photos, and keep the evidence. Your landlord doesn’t need to use the app. If they invited you, open their link or choose “Join with a link”.
           </EmptyState>
         </Card>
       ) : (

@@ -6,6 +6,7 @@ import { exportMyData, getDeletionRequest, requestDeletion } from '@/data/accoun
 import { resendVerification, signOut } from '@/data/auth';
 import { updateProfile, type Intent, type ThemePreference } from '@/data/users';
 import { usingEmulators } from '@/lib/firebase';
+import { saveFile } from '@/lib/files';
 import { friendlyError } from '@/lib/live';
 import { useAuthed } from '@/app/session';
 import { applyTheme } from '@/app/theme';
@@ -43,10 +44,7 @@ export function SettingsPage() {
     setExporting(true);
     try {
       const blob = await exportMyData(user.uid);
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${Brand.name.toLowerCase()}-export-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
+      await saveFile(blob, `${Brand.name.toLowerCase()}-export-${new Date().toISOString().slice(0, 10)}.json`, 'Your data');
     } catch (e) {
       toast(friendlyError(e), 'bad');
     } finally {

@@ -72,3 +72,11 @@ export const INVITE_PROBLEM_MESSAGES: Record<InviteProblem, string> = {
 export function inviteLink(baseUrl: string, token: string): string {
   return `${baseUrl.replace(/#.*$/, '').replace(/\/?$/, '/')}#/invite/${token}`;
 }
+
+/** Extracts the invitation token from a pasted link (or a bare token). Returns null if none is found. */
+export function parseInviteToken(text: string): string | null {
+  const t = text.trim();
+  const fromLink = /#\/invite\/([0-9a-z]{32,})/i.exec(t);
+  if (fromLink) return fromLink[1]!.toLowerCase();
+  return /^[0-9a-z]{32,}$/i.test(t) ? t.toLowerCase() : null;
+}

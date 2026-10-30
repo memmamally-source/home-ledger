@@ -9,6 +9,7 @@ import { useMyProperties } from '@/data/properties';
 import { friendlyError } from '@/lib/live';
 import { useAuthed } from '@/app/session';
 import { PropertyCard } from '@/features/home/HomePage';
+import { JoinWithLinkButton } from '@/features/invitations/JoinWithLink';
 import { ButtonLink } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { EmptyState, ErrorNote } from '@/ui/EmptyState';
@@ -47,7 +48,15 @@ export function PropertiesPage() {
 
   return (
     <div className="animate-rise">
-      <PageHeader title="Properties" subtitle="Everything you own, manage or rent." actions={<ButtonLink to="/properties/new" icon={<Plus className="size-4" />}>Add property</ButtonLink>} />
+      <PageHeader title="Properties" subtitle="Everything you own, manage or rent." actions={
+          <>
+            <JoinWithLinkButton />
+            <ButtonLink to="/properties/new" icon={<Plus className="size-4" />}>
+              Add property
+            </ButtonLink>
+          </>
+        }
+      />
       {props.error && <ErrorNote>{friendlyError(props.error)}</ErrorNote>}
       {props.loading ? (
         <LoadingBlock />

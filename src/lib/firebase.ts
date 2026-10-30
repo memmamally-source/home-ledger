@@ -2,12 +2,15 @@ import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { browserLocalPersistence, browserPopupRedirectResolver, connectAuthEmulator, indexedDBLocalPersistence, initializeAuth, type Auth } from 'firebase/auth';
 import { connectFirestoreEmulator, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore } from 'firebase/firestore';
 import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage';
+import { isNative } from './platform';
 
 const env = import.meta.env;
 
 export const usingEmulators = env.VITE_USE_EMULATORS === 'true';
 export const firebaseConfigured = usingEmulators || Boolean(env.VITE_FIREBASE_API_KEY && env.VITE_FIREBASE_PROJECT_ID);
-export const appleSignInEnabled = env.VITE_ENABLE_APPLE_SIGNIN === 'true';
+export const appleSignInEnabled = env.VITE_ENABLE_APPLE_SIGNIN === 'true' && !isNative;
+/** Google sign-in uses a browser pop-up, which app stores' web views block; native builds need a native plugin first. */
+export const googleSignInEnabled = !isNative;
 
 const config = usingEmulators
   ? { apiKey: 'demo-key', authDomain: 'demo-homeledger.firebaseapp.com', projectId: 'demo-homeledger', storageBucket: 'demo-homeledger.appspot.com', appId: 'demo' }
@@ -29,10 +32,14 @@ function init() {
   if (app) return;
   if (!firebaseConfigured) throw new Error('Firebase is not configured. See docs/FIREBASE_SETUP.md.');
   app = initializeApp(config);
-  auth = initializeAuth(app, {
-    persistence: [indexedDBLocalPersistence, browserLocalPersistence],
-    popupRedirectResolver: browserPopupRedirectResolver,
-  });
+  // In the native app the pop-up resolver is left out: it loads Google's sign-in iframe, which native web views
+  // block, and it can stall sign-in. Native builds offer email sign-in only for now.
+  auth = initializeAuth(
+    app,
+    isNative
+      ? { persistence: indexedDBLocalPersistence }
+      : { persistence: [indexedDBLocalPersistence, browserLocalPersistence], popupRedirectResolver: browserPopupRedirectResolver },
+  );
   // The local cache keeps inspections usable offline; writes queue and sync when the connection returns.
   db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
   storage = getStorage(app);
